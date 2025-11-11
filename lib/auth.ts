@@ -1,7 +1,5 @@
 import crypto from "crypto"
 
-const SALT_ROUNDS = 10
-
 // Simulé - en production, utilisez bcrypt
 export async function hashPassword(password: string): Promise<string> {
   const salt = crypto.randomBytes(16).toString("hex")
@@ -38,6 +36,16 @@ export interface User {
 export const users: Map<string, User> = new Map()
 
 const sessions: Map<string, { userId: string; expiresAt: number }> = new Map()
+
+// Nettoyage automatique des sessions expirées toutes les heures
+setInterval(() => {
+  const now = Date.now()
+  for (const [token, session] of sessions.entries()) {
+    if (session.expiresAt < now) {
+      sessions.delete(token)
+    }
+  }
+}, 60 * 60 * 1000) // 1 heure
 
 export function createSession(userId: string): string {
   const token = generateToken()
