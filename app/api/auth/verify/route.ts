@@ -1,6 +1,8 @@
 import { validateSession, users } from "@/lib/auth"
 import { NextResponse } from "next/server"
 
+export const runtime = "nodejs"
+
 export async function GET(request: Request) {
   try {
     const token = request.cookies.get("authToken")?.value

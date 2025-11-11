@@ -2,35 +2,52 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { redirect } from "next/navigation"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 export default function DashboardPage() {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     async function checkAuth() {
-      const response = await fetch("/api/auth/verify")
+      try {
+        const response = await fetch("/api/auth/verify")
 
-      if (!response.ok) {
-        redirect("/")
+        if (!response.ok) {
+          router.push("/")
+          return
+        }
+
+        const data = await response.json()
+        setUser(data.user)
+      } catch (err) {
+        setError("Erreur de connexion au serveur")
+        console.error("Auth check error:", err)
       }
-
-      const data = await response.json()
-      setUser(data.user)
     }
 
     checkAuth()
-  }, [])
+  }, [router])
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" })
-    redirect("/")
+    try {
+      await fetch("/api/auth/logout", { method: "POST" })
+      router.push("/")
+    } catch (err) {
+      setError("Erreur lors de la déconnexion")
+      console.error("Logout error:", err)
+    }
   }
 
   if (!user) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Vérification de l'authentification...</p>
+        <div className="text-center">
+          <p className="text-muted-foreground">Vérification de l'authentification...</p>
+          {error && <p className="text-destructive mt-2">{error}</p>}
+        </div>
       </main>
     )
   }
@@ -43,12 +60,21 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold text-foreground">Bienvenue à la Bibliothèque</h1>
             <p className="text-muted-foreground mt-2">Connecté en tant que {user.email}</p>
           </div>
-          <form action={handleLogout}>
-            <Button type="submit" variant="outline">
+          <div className="flex gap-3">
+            <Link href="/scan">
+              <Button variant="default">Scanner un livre</Button>
+            </Link>
+            <Button onClick={handleLogout} variant="outline">
               Déconnexion
             </Button>
-          </form>
+          </div>
         </header>
+
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-6">
+            <p className="text-destructive">{error}</p>
+          </div>
+        )}
 
         <div className="bg-card rounded-lg border border-border p-8 text-center">
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
